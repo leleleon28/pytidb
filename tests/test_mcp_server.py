@@ -85,7 +85,7 @@ def test_tidb_connector_sets_query_timeout_init_command(monkeypatch):
 
     assert calls == [
         {
-            "url": None,
+            "database_url": None,
             "host": "127.0.0.1",
             "port": 4000,
             "username": "root",
@@ -121,7 +121,6 @@ def test_tidb_connector_preserves_query_timeout_when_switching_databases(monkeyp
     connector.switch_database("analytics")
 
     assert calls[1] == {
-        "url": None,
         "host": "127.0.0.1",
         "port": 4000,
         "username": "root",
@@ -133,7 +132,7 @@ def test_tidb_connector_preserves_query_timeout_when_switching_databases(monkeyp
     }
 
 
-def test_create_app_lifespan_passes_query_timeout(monkeypatch):
+def test_app_lifespan_passes_query_timeout(monkeypatch):
     captured = {}
 
     class FakeConnector:
@@ -147,11 +146,10 @@ def test_create_app_lifespan_passes_query_timeout(monkeypatch):
             captured["disconnected"] = True
 
     monkeypatch.setattr(mcp_server, "TiDBConnector", FakeConnector)
-
-    lifespan = mcp_server.create_app_lifespan(15)
+    monkeypatch.setattr(mcp_server, "MCP_QUERY_TIMEOUT", 15)
 
     async def run_lifespan():
-        async with lifespan(Mock()):
+        async with mcp_server.app_lifespan(Mock()):
             pass
 
     import asyncio
